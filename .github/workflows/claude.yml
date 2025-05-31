@@ -11,20 +11,31 @@ on:
     types: [submitted]
 
 jobs:
-  run-claude:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.11"
+          fetch-depth: 1
 
-      - name: Run Claude Code Action
+      - name: Run Claude Code
+        id: claude
         uses: raichi0618/claude-code-action@main
         with:
-          access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
-          refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
-          expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          trigger_phrase: "@claude"
+          model: claude-3-opus-20240229
+          anthropic_api_key: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
